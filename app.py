@@ -3,13 +3,13 @@ from flask import Flask, render_template, request, redirect, url_for, make_respo
 import sqlite3
 import uuid
 from datetime import datetime
-import csv
 import io
+import csv
 from functools import wraps
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'iplogger.db'
-app.config['SECRET_KEY'] = '12346775'
+app.config['SECRET_KEY'] = '123564'
 
 def get_db_connection():
     conn = sqlite3.connect(app.config['DATABASE'])
@@ -24,7 +24,6 @@ def require_cookie(f):
             return redirect(url_for('index'))
         if request.cookies.get(f'access_{link_id}') != 'true':
             return redirect(url_for('index'))
-        return f(*args, **kwargs)
         return f(*args, **kwargs)
     return decorated_function
 
@@ -64,7 +63,7 @@ def index():
 @app.route('/create', methods=['POST'])
 def create_link():
     link_id = str(uuid.uuid4())[:8]
-    target_url = request.form.get('target_url', url_for('location'))
+    target_url = request.form.get('target_url', url_for('show_map', link_id=link_id))  # Corrected this line
     created_at = datetime.now()
 
     conn = get_db_connection()
@@ -76,10 +75,6 @@ def create_link():
     resp = make_response(redirect(url_for('stats', link_id=link_id)))
     resp.set_cookie(f'access_{link_id}', 'true', max_age=60*60*24*365)
     return resp
-
-@app.route('/location')
-def location():
-    return render_template('location.html')
 
 @app.route('/track/<link_id>', methods=['GET', 'POST'])
 def track(link_id):
@@ -159,6 +154,23 @@ def track(link_id):
                            redirect_url=redirect_url,
                            log_id=log_id,
                            link_id=link_id)
+
+@app.route('/show_map/<link_id>')
+def show_map(link_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    c.execute("SELECT latitude, longitude FROM logs WHERE link_id = ? ORDER BY timestamp DESC LIMIT 1", (link_id,))
+    location_data = c.fetchone()
+    conn.close()
+
+    if location_data:
+        latitude = location_data['latitude']
+        longitude = location_data['longitude']
+        return render_template('map.html', latitude=latitude, longitude=longitude, link_id=link_id)
+    else:
+        return "No location data found yet. Please visit the tracking link first.", 404
+
 
 @app.route('/stats/<link_id>')
 @require_cookie
