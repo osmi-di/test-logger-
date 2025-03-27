@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Location</title>
+    <script src="https://api-maps.yandex.ru/2.1/?lang=en_US&amp;apikey=16b0bf26-9eed-4f76-badc-52a9f942f9e5" type="text/javascript"></script>
+    <style>
+        #map {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Location</h1>
+    <div id="map"></div>
+
+    <script>
+        ymaps.ready(init);
+
+        function init() {
+            const latitude = {{ latitude }};
+            const longitude = {{ longitude }};
+
+            if (latitude && longitude) {
+                var myMap = new ymaps.Map("map", {
+                    center: [latitude, longitude],
+                    zoom: 12
+                }, {
+                    searchControlProvider: 'yandex#search'
+                });
+
+                var myPlacemark = new ymaps.Placemark([latitude, longitude], {
+                    hintContent: 'User Location',
+                    balloonContent: 'This is the user\'s location.'
+                });
+
+                myMap.geoObjects.add(myPlacemark);
+            } else {
+                document.getElementById('map').innerHTML = "<p>Location data not available.</p>";
+            }
+        }
+    </script>
+</body>
+</html>
